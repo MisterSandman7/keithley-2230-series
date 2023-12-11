@@ -1,3 +1,5 @@
+use std::default;
+
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
@@ -12,34 +14,39 @@ pub struct Keithley2230 {
     instrument: visa_api::Instrument,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum PowerSupplyState {
     ON,
+    #[default]
     OFF,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum ChannelOutputState {
     ON,
+    #[default]
     OFF,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Channel {
+    #[default]
     CH1,
     CH2,
     CH3,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Parallel {
     ON,
+    #[default]
     OFF,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Series {
     ON,
+    #[default]
     OFF,
 }
 
