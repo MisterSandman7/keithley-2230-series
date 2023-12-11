@@ -1,6 +1,6 @@
 [package]
 name = "keithley-2230-series"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Keithley 2230 Series Instruments API"
 license = "MIT"
