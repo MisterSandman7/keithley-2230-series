@@ -5,7 +5,7 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-pub const MANUFACTURER: &str = "Keithley Instrument";
+pub const MANUFACTURER: &str = "Keithley Instruments";
 pub const MODEL: &str = "2230";
 
 pub struct Keithley2230 {
