@@ -12,7 +12,7 @@ pub const MODEL: &str = "2230";
 
 #[derive(Debug)]
 pub struct Keithley2230 {
-    instrument: visa_api::Instrument,
+    pub instrument: visa_api::Instrument,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
