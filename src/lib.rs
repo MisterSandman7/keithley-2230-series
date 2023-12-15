@@ -192,7 +192,7 @@ impl Keithley2230 {
 
     pub fn set_parallel(&mut self, parallel: Parallel) -> Result<()> {
         let command = match parallel {
-            Parallel::ON => "OUTP:PAR CH1CH2",
+            Parallel::ON => "OUTP:PAR ON",
             Parallel::OFF => "OUTP:PAR OFF",
         };
         visa_api::Instrument::write(&mut self.instrument, command)?;
