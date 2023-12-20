@@ -38,8 +38,9 @@ dependencies = [
 
 [[package]]
 name = "keithley-2230-series"
-version = "0.1.5"
+version = "0.2.0"
 dependencies = [
+ "strum",
  "thiserror",
  "visa-api",
 ]
@@ -200,9 +201,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "visa-api"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "335dc694a6cc918d0cc82ae17aa19e036aed77fbeb4a7d97643e4e45b78ca0ae"
+checksum = "bff205b506b3ad6089650cc95ec692077b10e577ea5a086043490aa50f537ab4"
 dependencies = [
  "strum",
  "thiserror",

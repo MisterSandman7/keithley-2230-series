@@ -1,153 +1,93 @@
-use std::default;
+use std::str::FromStr;
+use visa_api::*;
+pub struct Keithley2230(visa_api::Instrument);
+
+pub const MANUFACTURER: &str = "Keithley Instruments";
+pub const MODEL: &str = "2230";
 
 #[derive(Clone, Copy, Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     VisaApiError(#[from] visa_api::Error),
+    #[error(transparent)]
+    StrumParseError(#[from] strum::ParseError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-pub const MANUFACTURER: &str = "Keithley Instruments";
-pub const MODEL: &str = "2230";
 
-#[derive(Debug)]
-pub struct Keithley2230 {
-    pub instrument: visa_api::Instrument,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub enum PowerSupplyState {
-    ON,
-    #[default]
-    OFF,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub enum ChannelOutputState {
-    ON,
-    #[default]
-    OFF,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Debug, PartialEq, strum::AsRefStr, strum::Display, Default, strum::EnumString)]
 pub enum Channel {
     #[default]
+    #[strum(serialize = "CH1")]
     CH1,
+    #[strum(serialize = "CH2")]
     CH2,
+    #[strum(serialize = "CH3")]
     CH3,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-pub enum Parallel {
-    ON,
+#[derive(Debug, PartialEq, strum::AsRefStr, strum::Display, Default)]
+pub enum State {
     #[default]
-    OFF,
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub enum Series {
+    #[strum(serialize = "ON", serialize = "1")]
     ON,
-    #[default]
+    #[strum(serialize = "OFF", serialize = "0")]
     OFF,
-}
-
-impl core::fmt::Display for Channel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Channel::CH1 => write!(f, "CH1"),
-            Channel::CH2 => write!(f, "CH2"),
-            Channel::CH3 => write!(f, "CH3"),
-        }
-    }
-}
-
-impl core::fmt::Display for PowerSupplyState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PowerSupplyState::ON => write!(f, "ON"),
-            PowerSupplyState::OFF => write!(f, "OFF"),
-        }
-    }
-}
-
-impl core::fmt::Display for ChannelOutputState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ChannelOutputState::ON => write!(f, "ON"),
-            ChannelOutputState::OFF => write!(f, "OFF"),
-        }
-    }
 }
 
 impl Keithley2230 {
-    pub fn new(instrument: visa_api::Instrument) -> Self {
-        Self { instrument }
+    pub fn new(session: visa_api::Instrument) -> Self {
+        Self(session)
     }
 
-    pub fn set_channel(&mut self, channel: Channel, voltage: f32, current: f32) -> Result<()> {
-        let command = format!("APPL {}, {}, {}", channel, voltage, current);
-        visa_api::Instrument::write(&mut self.instrument, &command)?;
+    pub fn set_channel(&mut self, ch: Channel, v: f32, i: f32) -> Result<()> {
+        let cmd = format!("APPL {}, {}, {}", ch, v, i);
+        self.0.write(&cmd)?;
         Ok(())
     }
 
-    pub fn enable_output(&mut self, state: PowerSupplyState) -> Result<()> {
-        let command = format!("OUTP:ENAB {}", state);
-        visa_api::Instrument::write(&mut self.instrument, &command)?;
+    pub fn enable_output(&mut self, state: State) -> Result<()> {
+        let cmd = format!("OUTP:ENAB {}", state);
+        self.0.write(&cmd)?;
         Ok(())
     }
 
-    pub fn enable_channels(&mut self, state: ChannelOutputState) -> Result<()> {
-        let command = format!("OUTP:ENAB {}", state);
-        visa_api::Instrument::write(&mut self.instrument, &command)?;
-        Ok(())
-    }
-
-    pub fn enable_channel(&mut self, channel: Channel, state: ChannelOutputState) -> Result<()> {
-        // Save currently selected channel
-        let previous_channel = self.get_channel()?;
-
-        // Select channel to enable/disable
-        self.select_channel(channel)?;
-        // Enable/disable channel
-        let command = format!("CHAN:OUTP {}", state);
-        visa_api::Instrument::write(&mut self.instrument, &command)?;
-
-        // Restore previous channel
-        self.select_channel(previous_channel)?;
+    pub fn enable_channel(&mut self, ch: Channel, state: State) -> Result<()> {
+        let prev_ch = self.get_channel()?;
+        self.select_channel(ch)?;
+        let cmd = format!("CHAN:OUTP {}", state);
+        self.0.write(&cmd)?;
+        self.select_channel(prev_ch)?;
         Ok(())
     }
 
     pub fn get_channel(&mut self) -> Result<Channel> {
-        visa_api::Instrument::write(&mut self.instrument, "INST?")?;
-        let channel = visa_api::Instrument::read(&self.instrument)?;
-        let channel = match channel.trim() {
-            "CH1" => Channel::CH1,
-            "CH2" => Channel::CH2,
-            "CH3" => Channel::CH3,
-            _ => unreachable!(),
-        };
-        Ok(channel)
+        self.0.write("INST?")?;
+        let ch = self.0.read()?;
+        let ch = Channel::from_str(&ch)?;
+        Ok(ch)
     }
 
-    pub fn select_channel(&mut self, channel: Channel) -> Result<()> {
-        let command = format!("INST {}", channel);
-        visa_api::Instrument::write(&mut self.instrument, &command)?;
+    pub fn select_channel(&mut self, ch: Channel) -> Result<()> {
+        let cmd = format!("INST {}", ch);
+        self.0.write(&cmd)?;
         Ok(())
     }
 
-    pub fn switch_to_front_panel_control(&mut self) -> Result<()> {
-        visa_api::Instrument::write(&mut self.instrument, "SYST:LOC")?;
+    pub fn front_panel_ctrl(&mut self) -> Result<()> {
+        self.0.write("SYST:LOC")?;
         Ok(())
     }
 
-    pub fn switch_to_front_remote_control(&mut self) -> Result<()> {
-        visa_api::Instrument::write(&mut self.instrument, "SYST:REM")?;
+    pub fn remote_ctrl(&mut self) -> Result<()> {
+        self.0.write("SYST:REM")?;
         Ok(())
     }
 
-    pub fn read_current(&mut self) -> Result<(f32, f32, f32)> {
-        visa_api::Instrument::write(&mut self.instrument, "FETC:CURR? ALL")?;
-        let response = visa_api::Instrument::read(&self.instrument)?;
+    pub fn read_i(&mut self) -> Result<(f32, f32, f32)> {
+        self.0.write("FETC:CURR? ALL")?;
+        let response = self.0.read()?;
+
         let response = response
             .split(',')
             .map(|x| x.trim().parse::<f32>().ok().unwrap_or(0.0))
@@ -160,9 +100,10 @@ impl Keithley2230 {
         }
     }
 
-    pub fn read_voltage(&mut self) -> Result<(f32, f32, f32)> {
-        visa_api::Instrument::write(&mut self.instrument, "FETC:VOLT? ALL")?;
-        let response = visa_api::Instrument::read(&self.instrument)?;
+    pub fn read_v(&mut self) -> Result<(f32, f32, f32)> {
+        self.0.write("FETC:VOLT? ALL")?;
+        let response = self.0.read()?;
+
         let response = response
             .split(',')
             .map(|x| x.trim().parse::<f32>().ok().unwrap_or(0.0))
@@ -175,9 +116,10 @@ impl Keithley2230 {
         }
     }
 
-    pub fn read_power(&mut self) -> Result<(f32, f32, f32)> {
-        visa_api::Instrument::write(&mut self.instrument, "FETC:POW? ALL")?;
-        let response = visa_api::Instrument::read(&self.instrument)?;
+    pub fn read_p(&mut self) -> Result<(f32, f32, f32)> {
+        self.0.write("FETC:POW? ALL")?;
+        let response = self.0.read()?;
+
         let response = response
             .split(',')
             .map(|x| x.trim().parse::<f32>().ok().unwrap_or(0.0))
@@ -190,21 +132,15 @@ impl Keithley2230 {
         }
     }
 
-    pub fn set_parallel(&mut self, parallel: Parallel) -> Result<()> {
-        let command = match parallel {
-            Parallel::ON => "OUTP:PAR ON",
-            Parallel::OFF => "OUTP:PAR OFF",
-        };
-        visa_api::Instrument::write(&mut self.instrument, command)?;
+    pub fn set_paralel(&mut self, state: State) -> Result<()> {
+        let cmd = format!("OUT:PAR {}", state);
+        self.0.write(&cmd)?;
         Ok(())
     }
 
-    pub fn set_series(&mut self, series: Series) -> Result<()> {
-        let command = match series {
-            Series::ON => "OUTP:SER ON",
-            Series::OFF => "OUTP:SER OFF",
-        };
-        visa_api::Instrument::write(&mut self.instrument, command)?;
+    pub fn set_series(&mut self, state: State) -> Result<()> {
+        let cmd = format!("OUT:SER {}", state);
+        self.0.write(&cmd)?;
         Ok(())
     }
 }
