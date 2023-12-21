@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use visa_api::*;
-pub struct Keithley2230(visa_api::Instrument);
+pub struct Keithley2230 {
+    pub inner: visa_api::Instrument,
+}
 
 pub const MANUFACTURER: &str = "Keithley Instruments";
 pub const MODEL: &str = "2230";
@@ -41,7 +43,7 @@ impl Keithley2230 {
     pub fn new(rm: &DefaultRM) -> Result<Self> {
         let session = Instrument::new_session(&rm, MANUFACTURER, MODEL)?;
         if let Some(session) = session {
-            Ok(Self(session))
+            Ok(Self { inner: session })
         } else {
             Err(Error::NoInstrumentFound())
         }
@@ -49,13 +51,13 @@ impl Keithley2230 {
 
     pub fn set_channel(&mut self, ch: Channel, v: f32, i: f32) -> Result<()> {
         let cmd = format!("APPL {}, {}, {}", ch, v, i);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         Ok(())
     }
 
     pub fn enable_output(&mut self, state: State) -> Result<()> {
         let cmd = format!("OUTP:ENAB {}", state);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         Ok(())
     }
 
@@ -63,37 +65,37 @@ impl Keithley2230 {
         let prev_ch = self.get_channel()?;
         self.select_channel(ch)?;
         let cmd = format!("CHAN:OUTP {}", state);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         self.select_channel(prev_ch)?;
         Ok(())
     }
 
     pub fn get_channel(&mut self) -> Result<Channel> {
-        self.0.write("INST?")?;
-        let ch = self.0.read()?;
+        self.inner.write("INST?")?;
+        let ch = self.inner.read()?;
         let ch = Channel::from_str(&ch)?;
         Ok(ch)
     }
 
     pub fn select_channel(&mut self, ch: Channel) -> Result<()> {
         let cmd = format!("INST {}", ch);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         Ok(())
     }
 
     pub fn front_panel_ctrl(&mut self) -> Result<()> {
-        self.0.write("SYST:LOC")?;
+        self.inner.write("SYST:LOC")?;
         Ok(())
     }
 
     pub fn remote_ctrl(&mut self) -> Result<()> {
-        self.0.write("SYST:REM")?;
+        self.inner.write("SYST:REM")?;
         Ok(())
     }
 
     pub fn read_i(&mut self) -> Result<(f32, f32, f32)> {
-        self.0.write("FETC:CURR? ALL")?;
-        let response = self.0.read()?;
+        self.inner.write("FETC:CURR? ALL")?;
+        let response = self.inner.read()?;
 
         let response = response
             .split(',')
@@ -108,8 +110,8 @@ impl Keithley2230 {
     }
 
     pub fn read_v(&mut self) -> Result<(f32, f32, f32)> {
-        self.0.write("FETC:VOLT? ALL")?;
-        let response = self.0.read()?;
+        self.inner.write("FETC:VOLT? ALL")?;
+        let response = self.inner.read()?;
 
         let response = response
             .split(',')
@@ -124,8 +126,8 @@ impl Keithley2230 {
     }
 
     pub fn read_p(&mut self) -> Result<(f32, f32, f32)> {
-        self.0.write("FETC:POW? ALL")?;
-        let response = self.0.read()?;
+        self.inner.write("FETC:POW? ALL")?;
+        let response = self.inner.read()?;
 
         let response = response
             .split(',')
@@ -141,13 +143,13 @@ impl Keithley2230 {
 
     pub fn set_paralel(&mut self, state: State) -> Result<()> {
         let cmd = format!("OUT:PAR {}", state);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         Ok(())
     }
 
     pub fn set_series(&mut self, state: State) -> Result<()> {
         let cmd = format!("OUT:SER {}", state);
-        self.0.write(&cmd)?;
+        self.inner.write(&cmd)?;
         Ok(())
     }
 }
