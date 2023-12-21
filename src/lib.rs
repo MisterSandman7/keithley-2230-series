@@ -39,6 +39,24 @@ pub enum State {
     OFF,
 }
 
+pub struct Meas {
+    pub ch1: ChMeas,
+    pub ch2: ChMeas,
+    pub ch3: ChMeas,
+}
+
+pub struct ChMeas {
+    pub v: f32,
+    pub i: f32,
+    pub p: f32,
+}
+
+impl ChMeas {
+    pub fn new(v: f32, i: f32, p: f32) -> Self {
+        Self { v, i, p }
+    }
+}
+
 impl Keithley2230 {
     pub fn new(rm: &DefaultRM) -> Result<Self> {
         let session = Instrument::new_session(&rm, MANUFACTURER, MODEL)?;
@@ -139,6 +157,20 @@ impl Keithley2230 {
         } else {
             Ok((0.0, 0.0, 0.0))
         }
+    }
+
+    pub fn read_all(&mut self) -> Result<Meas> {
+        let v = self.read_v()?;
+        let i = self.read_i()?;
+        let p = self.read_p()?;
+
+        let meas = Meas {
+            ch1: ChMeas::new(v.0, i.0, p.0),
+            ch2: ChMeas::new(v.1, i.1, p.1),
+            ch3: ChMeas::new(v.2, i.2, p.2),
+        };
+
+        Ok(meas)
     }
 
     pub fn set_paralel(&mut self, state: State) -> Result<()> {

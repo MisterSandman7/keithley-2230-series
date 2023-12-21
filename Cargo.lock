@@ -38,7 +38,7 @@ dependencies = [
 
 [[package]]
 name = "keithley-2230-series"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "strum",
  "thiserror",
