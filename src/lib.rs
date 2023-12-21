@@ -11,6 +11,8 @@ pub enum Error {
     VisaApiError(#[from] visa_api::Error),
     #[error(transparent)]
     StrumParseError(#[from] strum::ParseError),
+    #[error("No Instrument found")]
+    NoInstrumentFound(),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -36,8 +38,13 @@ pub enum State {
 }
 
 impl Keithley2230 {
-    pub fn new(session: visa_api::Instrument) -> Self {
-        Self(session)
+    pub fn new(rm: &DefaultRM) -> Result<Self> {
+        let session = Instrument::new_session(&rm, MANUFACTURER, MODEL)?;
+        if let Some(session) = session {
+            Ok(Self(session))
+        } else {
+            Err(Error::NoInstrumentFound())
+        }
     }
 
     pub fn set_channel(&mut self, ch: Channel, v: f32, i: f32) -> Result<()> {

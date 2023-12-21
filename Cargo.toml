@@ -1,6 +1,6 @@
 [package]
 name = "keithley-2230-series"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Keithley 2230 Series Instruments API"
 license = "MIT"
@@ -8,7 +8,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-visa-api = "0.2.1"
+visa-api = "0.2.2"
 thiserror = "1.0.50"
 strum = { version = "0.25.0", features = ["derive"] }
 
