@@ -38,13 +38,14 @@ pub enum State {
     #[strum(serialize = "OFF", serialize = "0")]
     OFF,
 }
-
+#[derive(Debug, Default)]
 pub struct Meas {
     pub ch1: ChMeas,
     pub ch2: ChMeas,
     pub ch3: ChMeas,
 }
 
+#[derive(Debug, Default)]
 pub struct ChMeas {
     pub v: f32,
     pub i: f32,
